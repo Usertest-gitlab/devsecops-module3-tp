@@ -44,8 +44,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          # INSECURE pour démonstration FAIL
-          docker build -f Dockerfile.insecure2 -t app:${{ github.sha }} .
+          docker build -f Dockerfile.secure2 -t app:${{ github.sha }} .
 
       # Sauvegarder l'image pour les jobs suivants
       - name: Save image
