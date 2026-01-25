@@ -15,7 +15,7 @@ jobs:
 
       - name: Build image (secure)
         run: |
-          docker build -f Dockerfile.secure -t module3/secure:ci .
+          docker build -f Dockerfile.secure2 -t module3/secure:ci .
 
       - name: Trivy scan (fail on HIGH/CRITICAL)
         uses: aquasecurity/trivy-action@0.24.0
