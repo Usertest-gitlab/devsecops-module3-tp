@@ -1,0 +1,110 @@
+# ============================================================
+# WORKFLOW DAST - OWASP ZAP
+# Module 2 DevSecOps - Analyse dynamique
+# ============================================================
+
+name: DAST ZAP Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Permet de lancer manuellement
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Pour créer des issues si ZAP trouve des alertes (optionnel)
+  issues: write
+
+jobs:
+  zap-scan:
+    name: OWASP ZAP Baseline Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ============================================================
+      # 1. BUILD ET LANCEMENT DE L'APPLICATION
+      # ============================================================
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile.secure2 -t webapp:test .
+
+      - name: Start application
+        run: |
+          docker run -d --name webapp -p 8080:8080 webapp:test
+          # Attendre que l'app soit prête
+          sleep 5
+          # Vérifier que l'app répond
+          curl -f http://localhost:8080/health || exit 1
+          echo "Application is running"
+
+      # ============================================================
+      # 2. SCAN OWASP ZAP
+      # ============================================================
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:8080'
+          # Fichier de règles pour personnaliser les alertes
+          rules_file_name: '.zap/rules.tsv'
+          # Ne pas échouer sur les alertes (pour démonstration)
+          # Mettre 'true' pour bloquer sur alertes
+          fail_action: false
+          # Générer un rapport HTML
+          allow_issue_writing: false
+          # Commande additionnelle pour spider basique
+          cmd_options: '-a'
+
+      # ============================================================
+      # 3. ARCHIVAGE DES RAPPORTS
+      # ============================================================
+      - name: Upload ZAP Report (HTML)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-html
+          path: report_html.html
+          retention-days: 30
+
+      - name: Upload ZAP Report (Markdown)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-md
+          path: report_md.md
+          retention-days: 30
+
+      - name: Upload ZAP Report (JSON)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-json
+          path: report_json.json
+          retention-days: 30
+
+      # ============================================================
+      # 4. AFFICHER RÉSUMÉ DANS LES LOGS
+      # ============================================================
+      - name: Display scan summary
+        if: always()
+        run: |
+          echo "=== ZAP SCAN SUMMARY ==="
+          if [ -f report_md.md ]; then
+            cat report_md.md
+          else
+            echo "No markdown report generated"
+          fi
+
+      # ============================================================
+      # 5. CLEANUP
+      # ============================================================
+      - name: Stop application
+        if: always()
+        run: |
+          docker stop webapp || true
+          docker rm webapp || true
