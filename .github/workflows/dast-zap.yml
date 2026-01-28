@@ -59,6 +59,7 @@ jobs:
           allow_issue_writing: false
           # Commande additionnelle pour spider basique
           cmd_options: '-a'
+          artifact_name: 'zap-scan-artifact'
 
       # ============================================================
       # 3. ARCHIVAGE DES RAPPORTS
