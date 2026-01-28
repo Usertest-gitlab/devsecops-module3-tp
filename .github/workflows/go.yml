@@ -1,0 +1,14 @@
+# Stage 1: Build avec musl (statique)
+FROM rust:1.75-alpine AS builder
+RUN apk add --no-cache musl-dev
+WORKDIR /app
+COPY Cargo.toml .
+COPY src/ src/
+RUN rustup target add x86_64-unknown-linux-musl && \
+cargo build --release --target x86_64-unknown-linux-musl
+
+# Stage 2: Runtime scratch
+FROM scratch
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/server /server
+EXPOSE 8080
+ENTRYPOINT ["/server"]
