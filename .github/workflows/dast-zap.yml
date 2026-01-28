@@ -42,7 +42,11 @@ jobs:
           # Vérifier que l'app répond
           curl -f http://localhost:8080/health || exit 1
           echo "Application is running"
-
+      - name: Enable debug logging
+        run: |
+             echo "##[debug]debug logging enabled" 
+             echo "Step debugging activated!"
+      
       # ============================================================
       # 2. SCAN OWASP ZAP
       # ============================================================
@@ -59,7 +63,15 @@ jobs:
           allow_issue_writing: false
           # Commande additionnelle pour spider basique
           cmd_options: '-a'
-          artifact_name: 'zap-scan-artifact'
+          
+      - name: List files for debugging
+        run: ls -alh ./  # Cela listera tous les fichiers dans le répertoire de travail
+
+      - name: Upload ZAP Scan Artifact
+          uses: actions/upload-artifact@v2
+          with:
+            name: zap-scan-artifact  # Nom de l'artifact
+            path: ./zap-report.html  # Assure-toi que ce fichier existe
 
       # ============================================================
       # 3. ARCHIVAGE DES RAPPORTS
